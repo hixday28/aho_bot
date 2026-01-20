@@ -43,7 +43,8 @@ async def get_request(req_id):
 async def get_user_requests(user_id):
     async with aiosqlite.connect(DB_NAME) as db:
         db.row_factory = aiosqlite.Row
-        async with db.execute('SELECT id, category, status FROM requests WHERE user_id = ? ORDER BY id DESC LIMIT 10', (user_id,)) as cursor:
+        # ДОБАВИЛИ 'description' в список полей
+        async with db.execute('SELECT id, category, status, description FROM requests WHERE user_id = ? ORDER BY id DESC LIMIT 10', (user_id,)) as cursor:
             return await cursor.fetchall()
 
 

@@ -180,18 +180,28 @@ async def process_description(message: types.Message, state: FSMContext):
 async def my_requests(message: types.Message):
     requests = await db.get_user_requests(message.from_user.id)
     if not requests:
-        await message.answer("Список пуст.")
+        await message.answer("У вас пока нет заявок.")
         return
     
     text = "📋 <b>Ваши последние заявки:</b>\n\n"
     for r in requests:
-        # Иконки статусов
+        # Выбираем иконку
         icon = "🆕"
         if "В работе" in r['status']: icon = "🛠"
         elif "Выполнено" in r['status']: icon = "✅"
         elif "Отклонено" in r['status']: icon = "❌"
+        
+        # Обрезаем описание, если оно слишком длинное (чтобы не засорять экран)
+        desc = r['description']
+        if len(desc) > 35:
+            desc = desc[:35] + "..."
             
-        text += f"#{r['id']} {r['category']} — {icon} {r['status']}\n"
+        # Формируем красивый блок
+        text += (
+            f"<b>#{r['id']} {r['category']}</b>\n"
+            f"└ <i>{desc}</i>\n"
+            f"└ Статус: {icon} {r['status']}\n\n"
+        )
     
     await message.answer(text, parse_mode="HTML")
 
