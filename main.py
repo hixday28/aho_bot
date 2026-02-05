@@ -253,39 +253,43 @@ async def admin_active_requests(message: types.Message):
 async def admin_work(callback: types.CallbackQuery):
     req_id = callback.data.split("_")[1]
     
-    # 1. Меняем статус в БД
     await db.update_status(req_id, "В работе 🛠")
     
-    # 2. Меняем клавиатуру на "урезанную" (без кнопки Взять)
     try:
         await callback.message.edit_reply_markup(reply_markup=admin_in_work_kb(req_id))
     except Exception:
         pass
 
-    # Всплывающее уведомление админу
     await callback.answer("Заявка взята в работу!", show_alert=False)
     
-    # 3. Уведомляем пользователя
     req_data = await db.get_request(req_id)
     if req_data:
+        user_id = req_data[0]
+        desc = req_data[1] # Берем описание
+        # Если описание длинное, обрезаем для красоты
+        if len(desc) > 30: desc = desc[:30] + "..."
+            
         try:
-            await bot.send_message(req_data[0], f"🛠 Ваша заявка #{req_id} взята в работу!")
+            await bot.send_message(user_id, f"🛠 Ваша заявка #{req_id} («{desc}») взята в работу!")
         except:
-            pass # Если юзер заблочил бота
+            pass
 
 @dp.callback_query(F.data.startswith("done_"))
 async def admin_done(callback: types.CallbackQuery):
     req_id = callback.data.split("_")[1]
     await db.update_status(req_id, "Выполнено ✅")
     
-    # Убираем кнопки совсем
     await callback.message.edit_reply_markup(reply_markup=None)
     await callback.message.reply(f"Заявка #{req_id} закрыта.")
     
     req_data = await db.get_request(req_id)
     if req_data:
+        user_id = req_data[0]
+        desc = req_data[1]
+        if len(desc) > 30: desc = desc[:30] + "..."
+
         try:
-            await bot.send_message(req_data[0], f"✅ Заявка #{req_id} выполнена! Спасибо.")
+            await bot.send_message(user_id, f"✅ Заявка #{req_id} («{desc}») выполнена! Спасибо.")
         except:
             pass
     await callback.answer()
@@ -297,11 +301,14 @@ async def admin_reject(callback: types.CallbackQuery):
     
     await callback.message.edit_reply_markup(reply_markup=None)
     await callback.message.reply(f"Заявка #{req_id} отклонена.")
-    
     req_data = await db.get_request(req_id)
     if req_data:
+        user_id = req_data[0]
+        desc = req_data[1]
+        if len(desc) > 30: desc = desc[:30] + "..."
+
         try:
-            await bot.send_message(req_data[0], f"❌ Заявка #{req_id} отклонена администратором.")
+            await bot.send_message(user_id, f"❌ Заявка #{req_id} («{desc}») отклонена администратором.")
         except:
             pass
     await callback.answer()
